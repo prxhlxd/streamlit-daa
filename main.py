@@ -17,7 +17,7 @@ if 'initialized' not in st.session_state:
     st.session_state.graph = None
     st.session_state.pos = None
     st.session_state.call_stack = []
-    st.session_state.page = "visualization"  # Default page
+    st.session_state.page = "reports"  # Default page
 
 # Add navigation in sidebar
 st.sidebar.title("Navigation")
@@ -262,7 +262,12 @@ def show_visualization_page():
 2 4
 2 3
 3 4
-"""
+6 7
+7 8
+8 9
+9 6
+6 8
+7 9"""
     
     edge_list_text = st.sidebar.text_area("Edge List (one edge per line)", value=default_edges, height=200)
     
@@ -730,6 +735,7 @@ def show_reports_page():
 # Update the main flow to choose between pages
 if __name__ == "__main__":
     if st.session_state.page == "visualization":
-        show_reports_page()
-    else:
         show_visualization_page()
+    else:
+        show_reports_page()
+        
