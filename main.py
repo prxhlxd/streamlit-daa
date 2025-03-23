@@ -262,12 +262,7 @@ def show_visualization_page():
 2 4
 2 3
 3 4
-6 7
-7 8
-8 9
-9 6
-6 8
-7 9"""
+"""
     
     edge_list_text = st.sidebar.text_area("Edge List (one edge per line)", value=default_edges, height=200)
     
