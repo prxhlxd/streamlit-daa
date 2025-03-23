@@ -2,3 +2,6 @@ streamlit
 networkx
 pandas
 plotly
+numpy
+pandas
+matplotlib.pyplot
