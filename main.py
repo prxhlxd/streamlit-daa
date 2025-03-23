@@ -21,7 +21,7 @@ if 'initialized' not in st.session_state:
 
 # Add navigation in sidebar
 st.sidebar.title("Navigation")
-page = st.sidebar.radio("Go to", ["Algorithm Visualization", "Algorithm Reports"], index=0)
+page = st.sidebar.radio("Go to", ["Algorithm Reports", "Algorithm Visualization"], index=0)
 
 # Update session state with selected page
 if page == "Algorithm Visualization":
@@ -469,288 +469,272 @@ def show_visualization_page():
             - Purple node: Vertex that could be added (indicates clique is not maximal)
             - Green edges: Edges within the clique being tested for maximality
         """)
-
+import plotly.express as px
 # Define the Report Page
 def show_reports_page():
-    st.title("Maximal Clique Algorithm Reports")
+    st.title("Reports and Analysis")
     
-    # Create tabs for the two reports
-    tab1, tab2 = st.tabs(["Tomita Algorithm", "Chiba & Nishizeki Algorithm"])
+    # Create tabs for the different analyses
+    tabs = st.tabs(["Comparative Analysis", "Tomita Algorithm", "Bron-Kerbosch Algorithm", "Chiba-Nishizeki Algorithm"])
     
-    with tab1:
-        # Set a nice header with a colored background
-        st.markdown("""
-        <div style="background-color:#f0f2f6; padding:10px; border-radius:10px; margin-bottom:20px">
-            <h2 style="text-align:center; color:#1e3d59;">Tomita Algorithm for Maximal Clique Enumeration</h2>
-        </div>
-        """, unsafe_allow_html=True)
+    with tabs[0]:  # Comparative Analysis
+        st.header("Comparative Analysis of the Three Algorithms")
         
-        # Create columns for better content layout
-        col1, col2 = st.columns([3, 2])
+        # Dataset information table
+        st.subheader("Dataset Statistics")
+        data = {
+            "Dataset": ["Wiki-Vote", "Email-Enron", "As-Skitter"],
+            "Total Maximal Cliques": ["459,002", "226,859", "37,322,355"],
+            "Largest Clique Size": ["17", "20", "67"]
+        }
+        df_stats = pd.DataFrame(data)
+        st.table(df_stats)
         
-        with col1:
-            # Introduction with formatting
-            st.markdown("""
-            ### 📌 Introduction
-            
-            This paper presents a depth-first search algorithm for generating all the maximal cliques of
-            an undirected graph, in which pruning methods are employed as in the Bron–Kerbosch
-            algorithm. The algorithm's worst-case running time complexity is **O(3^(n/3))**, for a graph
-            with n vertices. This is the best one could hope for as a function of n, since there exist up to
-            3^(n/3) maximal cliques in a graph with n vertices as shown by Moon and Moser.
-            """)
-            
-            # Algorithm description with nice formatting
-            st.markdown("""
-            ### 🔍 Algorithm Details
-            
-            The algorithm uses the following key data structures:
-            - **Q**: Current clique being built. Initiated as an empty set.
-            - **SUBG**: Set of vertices that can be added to Q. Initiated as a set containing all vertices V of G(V,E).
-            - **CAND**: Vertices from SUBG that haven't been processed (candidates for expansion of cliques). Initiated as a set containing all vertices V of G(V,E).
-            - **FINI**: Vertices already processed at a given recursion level (finished nodes). Initiated as an empty set.
-            
-            The core of the algorithm is a recursive procedure named **EXPAND(Q, SUBG, CAND, FINI)** that works as follows:
-            
-            **If SUBG is empty:**
-            - The current clique being built is optimal
-            - Increase num_max_cliques
-            - Build clique_size_distr by increasing the count of the corresponding clique size
-            
-            **Else:**
-            1. Choose a pivot vertex u from SUBG that maximizes ∣CAND∩Γ(u)∣, where Γ(u) denotes neighbors of vertex u
-            2. Build the candidate set (CAND-Γ(u)) for expansion of Q
-            3. For each vertex q in candidates set:
-                - Create SUBG_q = SUBG∩Γ(q), CAND_q = CAND∩Γ(q), FINI_q as empty set
-                - Add q to Q and recursively call EXPAND(Q, SUBG_q, CAND_q, FINI_q)
-                - After the recursion call, remove q from Q and move it from CAND to FINI
-            """)
-            
-            # Time complexity analysis with nice formatting
-            st.markdown("""
-            ### ⏱️ Time Complexity Analysis
-            
-            The time complexity can be broken down as follows:
-            1. Choosing a pivot from SUBG - **O(n²)**
-            2. Generating Candidate set - **O(n)**
-            3. Process each vertex in candidate set (|CAND-Γ(u)|)
-               - For each vertex, a recursive call is made on a subproblem with fewer vertices
-               - Worst case scenario: subproblem is of size n-1, giving **O(n-1)**
-            
-            This leads to the recurrence relation:
-            
-            **T(n) = k⋅T(n-1) + O(n²) + O(n)**
-            
-            Where k = |CAND-Γ(u)| represents the branching factor.
-            
-            The Moon-Moser theorem states that the maximum number of maximal cliques in an
-            undirected graph with n vertices is 3^(n/3), when every vertex belongs to exactly three
-            maximal cliques. Therefore, in the worst case, the branching factor is 3. The new recurrence
-            relation becomes:
-            
-            **T(n) = 3⋅T(n-1) + O(n²)**
-            
-            Solving this gives us **T(n) = O(3^(n/3))** as the overall time complexity.
-            """)
+        # Execution time comparison
+        st.subheader("Execution Time Comparison")
+        execution_data = {
+            "Algorithm": ["Tomita", "Bron-Kerbosch", "Chiba-Nishizeki"] * 3,
+            "Dataset": ["Wiki-Vote"] * 3 + ["Email-Enron"] * 3 + ["As-Skitter"] * 3,
+            "Time (seconds)": [27, 212, 484, 142, 582, 697, 32000, 45750, 90437]
+        }
+        df_execution = pd.DataFrame(execution_data)
         
-        with col2:
-            # Experimental Results in a card-like container
-            st.markdown("""
-            <div style="background-color:#ffffff; padding:15px; border-radius:10px; border:1px solid #e0e0e0; margin-bottom:20px">
-                <h3 style="text-align:center; color:#1e3d59;">📊 Experimental Results</h3>
-            </div>
-            """, unsafe_allow_html=True)
+        # Convert to numeric for plotting
+        df_execution["Time (seconds)"] = pd.to_numeric(df_execution["Time (seconds)"])
+        
+        fig = px.bar(
+            df_execution,
+            x="Dataset",
+            y="Time (seconds)",
+            color="Algorithm",
+            barmode="group",
+            title="Execution Time Comparison",
+            log_y=True  # Using log scale due to large differences
+        )
+        st.plotly_chart(fig)
+        
+        # Distribution of different size cliques with actual data
+        st.subheader("Distribution of Clique Sizes")
+        st.write("Select dataset to view clique size distribution:")
+        selected_dataset = st.selectbox("Dataset", ["Wiki-Vote", "Email-Enron", "As-Skitter"], key="clique_dist")
+        
+        # Actual clique size distribution data
+        if selected_dataset == "Wiki-Vote":
+            # Wiki-Vote data
+            counts = [8655, 13718, 27292, 48416, 68872, 83266, 76732, 54456, 35470, 21736, 
+          11640, 5449, 2329, 740, 208, 23]
+            # Clique sizes from 2 to 20
+            sizes = list(range(2, 2 + len(counts)))
             
-            # Create a nicer looking table for the results
-            results_data = {
-                "Dataset": ["Wiki-Vote", "Email-Enron", "As-Skitter"],
-                "Total Maximal Cliques": ["459,002", "226,859", "NaN"],
-                "Execution Time (seconds)": ["122", "624", "NaN"],
-                "Largest Clique Size": ["17", "20", "NaN"]
-            }
+        elif selected_dataset == "Email-Enron":
+            # Email-Enron data
+            counts = [14070, 7077, 13319, 18143, 22715, 25896, 24766, 22884, 21393, 17833, 
+                      15181, 11487, 7417, 3157, 1178, 286, 41, 10, 6]
+            # Clique sizes from 2 to 20
+            sizes = list(range(2, 2 + len(counts)))
             
-            df = pd.DataFrame(results_data)
+        else:  # As-Skitter
+            # As-Skitter data
+            counts = [2319807, 3171609, 1823321, 939336, 684873, 598284, 588889, 608937, 665661, 728098, 
+                      798073, 877282, 945194, 980831, 939987, 839330, 729601, 639413, 600192, 611976,
+                      640890, 673924, 706753, 753633, 818353, 892719, 955212, 999860, 1034106, 1055653,
+                      1017560, 946717, 878552, 809485, 744634, 663650, 583922, 520239, 474301, 420796,
+                      367879, 321829, 275995, 222461, 158352, 99522, 62437, 39822, 30011, 25637,
+                      17707, 9514, 3737, 2042, 1080, 546, 449, 447, 405, 283, 242, 146, 84, 49, 22, 4]
+            # Clique sizes from 2 to 67
+            sizes = list(range(2, 2 + len(counts)))
+        
+        clique_df = pd.DataFrame({"Clique Size": sizes, "Frequency": counts})
+        
+        # Create a bar chart with the actual data
+        fig = px.bar(
+            clique_df, 
+            x="Clique Size", 
+            y="Frequency", 
+            title=f"Clique Size Distribution for {selected_dataset}"
+        )
+        
+        # Customize x-axis to show more tick marks appropriately
+        if selected_dataset == "As-Skitter":
+            # For the larger dataset, show fewer ticks
+            fig.update_xaxes(tickmode='array', tickvals=list(range(2, 68, 5)))
+        else:
+            # For smaller datasets, show all ticks
+            fig.update_xaxes(tickmode='linear')
             
-            # Apply custom styling to the table
-            st.dataframe(df, use_container_width=True)
-            
-            # References
-            st.markdown("""
-            <div style="background-color:#ffffff; padding:15px; border-radius:10px; border:1px solid #e0e0e0; margin-top:20px">
-                <h3 style="text-align:center; color:#1e3d59;">📚 References</h3>
-            </div>
-            """, unsafe_allow_html=True)
-            
-            st.markdown("""
-            1. Tomita, Etsuji & Tanaka, Akira & Takahashi, Haruhisa. (2006). The Worst-Case Time Complexity for Generating All Maximal Cliques and Computational Experiments. Theoretical Computer Science. 363. 28-42. 10.1016/j.tcs.2006.06.015.
-            
-            2. C. Bron, J. Kerbosch, Algorithm 457, finding all cliques of an undirected graph, Comm. ACM 16 (1973) 575–577.
-            
-            3. J.W. Moon, L. Moser, On cliques in graphs, Israel J. Math. 3 (1965) 23–28.
-            """)
-            
-            # Add a visualization of time complexity growth
-            st.markdown("""
-            <div style="background-color:#ffffff; padding:15px; border-radius:10px; border:1px solid #e0e0e0; margin-top:20px">
-                <h3 style="text-align:center; color:#1e3d59;">📈 Time Complexity Visualization</h3>
-            </div>
-            """, unsafe_allow_html=True)
-            
-            # Create a simple visualization of the O(3^n) growth
-            fig, ax = plt.subplots(figsize=(8, 4))
-            n_values = np.arange(1, 11)
-            complexity = 3 ** (n_values / 3)
-            ax.plot(n_values, complexity, marker='o', color='#1e3d59', linewidth=2)
-            ax.set_xlabel('Number of Vertices (n)')
-            ax.set_ylabel('Time Complexity O(3^(n/3))')
-            ax.set_title('Growth of Time Complexity')
-            ax.grid(True, linestyle='--', alpha=0.7)
-            ax.set_yscale('log')
-            st.pyplot(fig)
+        # Apply log scale to y-axis for better visualization
+        fig.update_yaxes(type="log")
+        
+        st.plotly_chart(fig)
+        
+        # Add efficiency comparison
+        st.subheader("Algorithm Efficiency Comparison")
+        efficiency_data = {
+            "Algorithm": ["Tomita", "Bron-Kerbosch", "Chiba-Nishizeki(per clique)"],
+            "Time Complexity": ["O(3^(n/3))", "O(d·n·3^(d/3))", "O(α(G)·m)"],
+            "Approach": ["DFS with pruning", "Degeneracy ordering with pivoting", "Vertex elimination with arboricity"]
+        }
+        efficiency_df = pd.DataFrame(efficiency_data)
+        st.table(efficiency_df)
     
-    with tab2:
-        # Set a nice header with a colored background
-        st.markdown("""
-        <div style="background-color:#f0f2f6; padding:10px; border-radius:10px; margin-bottom:20px">
-            <h2 style="text-align:center; color:#1e3d59;">Chiba and Nishizeki Algorithm Analysis</h2>
-        </div>
-        """, unsafe_allow_html=True)
+    with tabs[1]:  # Tomita Algorithm
+        st.header("Tomita Algorithm")
         
-        # Introduction with better formatting
         st.markdown("""
-        ### 📌 Introduction
+        **Time Complexity**: O(3^(n/3))
         
-        The algorithm for listing all maximal cliques in a graph, as described in the paper, was implemented and
-        tested on three real-world datasets: the Wiki-Vote dataset, Email-Enron dataset, and Autonomous Systems
-        by Skitter datasets. This report presents an analysis of the algorithm's performance, including the total
-        number of maximal cliques found, execution time, and additional metrics for evaluating computational
-        efficiency.
+        **Summary**: The Tomita algorithm is a depth-first search algorithm for generating all maximal cliques with efficient pruning methods. Its novelty lies in achieving the optimal worst-case time complexity of O(3^(n/3)), matching the theoretical upper bound on maximal cliques in a graph as proven by Moon and Moser. The algorithm uses a clever pivoting strategy that minimizes the size of the search space by selecting pivots that maximize the intersection with the candidate set.
         """)
         
-        # Create two columns for better content layout
-        col1, col2 = st.columns([1, 1])
+        # Tomita algorithm performance table
+        tomita_data = {
+            "Dataset": ["Wiki-Vote", "Email-Enron", "As-Skitter"],
+            "Total Maximal Cliques": ["459,002", "226,859", "37,322,355"],
+            "Execution Time (seconds)": ["27", "142", "~54000"],
+            "Largest Clique Size": ["17", "20", "67"]
+        }
+        tomita_df = pd.DataFrame(tomita_data)
+        st.table(tomita_df)
         
-        with col1:
-            st.markdown("""
-            ### 🔍 Key Parts of the Algorithm
-            
-            The Chiba-Nishizeki algorithm lists all maximal cliques in a graph using a vertex
-            elimination approach combined with adjacency list traversal. The key steps are:
-            
-            1. **Vertex Sorting**: We sort the adjacency list such that the nodes with least degree appear first and
-               thus are ordered based on degree.
-            
-            2. **Clique Expansion**: For each node, the algorithm finds cliques that include the vertex by searching
-               its neighborhood.
-            
-            3. **Maximality Test**: For a given clique C, we try to add a node and check if it can be made maximal
-               by adding that node. Doing this test for all nodes ensures that the current clique is maximal and
-               no more edges can be added to it.
-            
-            4. **Backtracking & Pruning**: Unnecessary computations are avoided by eliminating processed
-               vertices, ensuring (using the lexicographical test) each clique is enumerated exactly once.
-            """)
-            
-            st.markdown("""
-            ### ⏱️ Time Complexity Breakdown
-            
-            The algorithm operates with a worst-case time complexity of **O(α(G) * m)** per maximal clique, where:
-            - **m** is the number of edges in the graph.
-            - **α(G)** is the arboricity of the graph
-            
-            #### Step-wise Complexity Analysis
-            
-            1. **readGraph (O(m))**: Simply reading all edges from file and updating the adjacency lists.
-            
-            2. **Vertex Sorting (O(n))**:
-               - Uses bucket sort algorithm as degrees and node numbers are discrete integer values.
-            
-            3. **Building Neighborhood Subgraphs (O(m))**:
-               - Before a node is added, it goes through maximalityTest() and lexicographicTest(), each
-                 of which take O(m) time.
-            
-            4. **Recursive Clique Enumeration (O(α(G) * m))**:
-               - The recursion ensures that each clique is found exactly once, using edge-based expansion
-                 limited by arboricity α(G). This is implemented in the UPDATE() function.
-            
-            5. **Pruning & Backtracking (O(m))**:
-               - By removing already processed vertices, the search space is reduced.
-            
-            Combining these steps, the overall complexity per maximal clique remains **O(α(G) * m)**.
-            """)
+        # Visualization of the algorithm's working
+        st.subheader("Algorithm Visualization")
         
-        with col2:
-            # Experimental Results in a card-like container
-            st.markdown("""
-            <div style="background-color:#ffffff; padding:15px; border-radius:10px; border:1px solid #e0e0e0; margin-bottom:20px">
-                <h3 style="text-align:center; color:#1e3d59;">📊 Experimental Results</h3>
-            </div>
-            """, unsafe_allow_html=True)
-            
-            # Create a nicer looking table for the results
-            chiba_results = {
-                "Dataset": ["Wiki-Vote", "Email-Enron", "As-Skitter"],
-                "Total Maximal Cliques": ["459,002", "226,859", "37,322,355"],
-                "Execution Time (seconds)": ["484", "697", "~15 days"],
-                "Largest Clique Size": ["17", "20", "67"]
-            }
-            
-            chiba_df = pd.DataFrame(chiba_results)
-            
-            # Apply styling
-            st.dataframe(chiba_df, use_container_width=True)
-            
-            # Possible Optimizations section
-            st.markdown("""
-            <div style="background-color:#ffffff; padding:15px; border-radius:10px; border:1px solid #e0e0e0; margin-top:20px">
-                <h3 style="text-align:center; color:#1e3d59;">🔧 Possible Optimizations</h3>
-            </div>
-            """, unsafe_allow_html=True)
-            
-            st.markdown("""
-            1. **2-Clique Detection Optimization**:
-               - Many 2-sized cliques in the dataset are simply edges with 2 nodes of degree 1
-               - These can be detected during bucket sort and removed safely
-               - With β as the fraction of 2-Cliques, new time complexity is O(β·α(G)·m) per maximal clique
-               - In the Skitter dataset, β = 2,319,807/37,322,355 = 0.062 (a small but worthwhile improvement)
-            
-            2. **Reduce Copy Operations**:
-               - Optimization opportunity exists to eliminate copy operations during recursive calls
-               - Using iterators instead could save significant processing time
-            """)
-            
-            # Algorithm performance comparison visualization
-            st.markdown("""
-            <div style="background-color:#ffffff; padding:15px; border-radius:10px; border:1px solid #e0e0e0; margin-top:20px">
-                <h3 style="text-align:center; color:#1e3d59;">📈 Algorithm Comparison</h3>
-            </div>
-            """, unsafe_allow_html=True)
-            
-            # Create a comparison of the two algorithms
-            fig, ax = plt.subplots(figsize=(8, 4))
-            
-            datasets = ["Wiki-Vote", "Email-Enron"]
-            tomita_times = [122, 624]
-            chiba_times = [484, 697]
-            
-            x = np.arange(len(datasets))
-            width = 0.35
-            
-            ax.bar(x - width/2, tomita_times, width, label='Tomita', color='#1e3d59')
-            ax.bar(x + width/2, chiba_times, width, label='Chiba', color='#f5b461')
-            
-            ax.set_ylabel('Execution Time (seconds)')
-            ax.set_title('Algorithm Execution Time Comparison')
-            ax.set_xticks(x)
-            ax.set_xticklabels(datasets)
-            ax.legend()
-            ax.grid(True, linestyle='--', alpha=0.3, axis='y')
-            
-            st.pyplot(fig)
-
+        # Simple mermaid diagram to show algorithm flow
+        mermaid_code = """
+        graph TD
+            A[Start] --> B[Initialize Q=∅, SUBG=V, CAND=V, FINI=∅]
+            B --> C[Call EXPAND]
+            C --> D{Is SUBG empty?}
+            D -- Yes --> E[Record maximal clique]
+            D -- No --> F[Choose pivot u to maximize |CAND∩Γ(u)|]
+            F --> G[Build candidate set CAND-Γ(u)]
+            G --> H[For each vertex q in candidate set]
+            H --> I[Compute SUBG_q, CAND_q, FINI_q]
+            I --> J[Add q to Q]
+            J --> K[Recursively call EXPAND]
+            K --> L[Remove q from Q, move to FINI]
+            L --> H
+        """
+        st.markdown(f"```mermaid\n{mermaid_code}\n```")
+        
+        # Time complexity breakdown visualization
+        st.subheader("Time Complexity Breakdown")
+        complexities = {
+            "Operation": ["Choosing a pivot", "Generating candidate set", "Processing each vertex", "Overall complexity"],
+            "Time Complexity": ["O(n²)", "O(n)", "O(n-1) per vertex", "O(3^(n/3))"]
+        }
+        complexity_df = pd.DataFrame(complexities)
+        st.table(complexity_df)
+    
+    with tabs[2]:  # Bron-Kerbosch Algorithm
+        st.header("Bron-Kerbosch Algorithm with Degeneracy Ordering")
+        
+        st.markdown("""
+        **Time Complexity**: O(d·n·3^(d/3)), where d is the degeneracy of the graph
+        
+        **Summary**: The Bron-Kerbosch algorithm with degeneracy ordering is particularly efficient for sparse graphs. Its novelty is in using the degeneracy ordering of vertices (processing lowest-degree vertices first) to reduce the search space and minimize recursive calls. This approach is especially powerful when the graph's degeneracy d is much smaller than the number of vertices n, making it near-optimal for many real-world networks.
+        """)
+        
+        # Bron-Kerbosch algorithm performance table
+        bk_data = {
+            "Dataset": ["Wiki-Vote", "Email-Enron", "As-Skitter"],
+            "Total Maximal Cliques": ["459,002", "226,859", "37,322,355"],
+            "Execution Time (seconds)": ["212", "582", "~75750"],
+            "Largest Clique Size": ["17", "20", "67"]
+        }
+        bk_df = pd.DataFrame(bk_data)
+        st.table(bk_df)
+        
+        # Visualization of the algorithm's working
+        st.subheader("Algorithm Visualization")
+        
+        # Simple mermaid diagram to show algorithm flow with degeneracy ordering
+        mermaid_code = """
+        graph TD
+            A[Start] --> B[Compute degeneracy ordering]
+            B --> C[Process vertices in order]
+            C --> D[For each vertex v]
+            D --> E[R = {v}]
+            E --> F[P = neighbors after v in ordering]
+            F --> G[X = neighbors before v in ordering]
+            G --> H[Call BronKerbosch with R, P, X]
+            H --> I{Are P and X empty?}
+            I -- Yes --> J[Record maximal clique]
+            I -- No --> K[Choose pivot to maximize neighbors in P]
+            K --> L[For each vertex in P not adjacent to pivot]
+            L --> M[Update R, P, X for recursive call]
+            M --> N[Recursively call BronKerbosch]
+            N --> L
+        """
+        st.markdown(f"```mermaid\n{mermaid_code}\n```")
+        
+        # Time complexity components
+        st.subheader("Time Complexity Components")
+        bk_complexity = {
+            "Operation": ["Computing degeneracy ordering", "Processing each vertex", "Recursive calls", "Overall complexity"],
+            "Time Complexity": ["O(n+m)", "O(d) per vertex", "O(3^(d/3)) per vertex", "O(d·3^(d/3))"]
+        }
+        bk_complexity_df = pd.DataFrame(bk_complexity)
+        st.table(bk_complexity_df)
+    
+    with tabs[3]:  # Chiba-Nishizeki Algorithm
+        st.header("Chiba-Nishizeki Algorithm")
+        
+        st.markdown("""
+        **Time Complexity**: O(α(G)·m) per maximal clique, where α(G) is the arboricity and m is the number of edges
+        
+        **Summary**: The Chiba-Nishizeki algorithm leverages graph arboricity to efficiently list all maximal cliques. Its novelty lies in using a vertex elimination approach combined with degree-based vertex sorting to minimize work. The algorithm particularly shines in graphs with low arboricity, which includes many real-world networks. The lexicographical test ensures each clique is enumerated exactly once.
+        """)
+        
+        # Chiba-Nishizeki algorithm performance table
+        cn_data = {
+            "Dataset": ["Wiki-Vote", "Email-Enron", "As-Skitter"],
+            "Total Maximal Cliques": ["459,002", "226,859", "37,322,355"],
+            "Execution Time (seconds)": ["484", "697", "~130,437"],
+            "Largest Clique Size": ["17", "20", "67"]
+        }
+        cn_df = pd.DataFrame(cn_data)
+        st.table(cn_df)
+        
+        # Visualization of the algorithm's working
+        st.subheader("Algorithm Visualization")
+        
+        # Simple mermaid diagram to show algorithm flow
+        mermaid_code = """
+        graph TD
+            A[Start] --> B[Sort vertices by degree]
+            B --> C[Process vertices in order]
+            C --> D[For each vertex v]
+            D --> E[Check maximality test]
+            E --> F[Check lexicographic test]
+            F --> G{Tests passed?}
+            G -- Yes --> H[Expand clique with v]
+            G -- No --> I[Skip v]
+            H --> J[Update neighborhood graph]
+            J --> K[Continue recursion]
+            K --> C
+        """
+        st.markdown(f"```mermaid\n{mermaid_code}\n```")
+        
+        # Time complexity components
+        st.subheader("Time Complexity Breakdown")
+        cn_complexity = {
+            "Operation": ["Reading graph", "Vertex sorting", "Building neighborhood subgraphs", "Recursive enumeration", "Pruning & backtracking", "Overall complexity"],
+            "Time Complexity": ["O(m)", "O(n)", "O(m)", "O(α(G)·m)", "O(m)", "O(α(G)·m) per clique"]
+        }
+        cn_complexity_df = pd.DataFrame(cn_complexity)
+        st.table(cn_complexity_df)
+        
+        # Optimization potential
+        st.subheader("Potential Optimizations")
+        st.markdown("""
+        1. **Early vertex elimination**: Detecting and removing 2-sized cliques during bucket sort (improves by factor β)
+        2. **Iterator-based implementation**: Avoiding copy operations during recursive calls
+        3. **Bitset representation**: Using bitwise operations for set operations in smaller graphs
+        """)
 # Update the main flow to choose between pages
 if __name__ == "__main__":
     if st.session_state.page == "visualization":
-        show_visualization_page()
-    else:
         show_reports_page()
+    else:
+        show_visualization_page()
